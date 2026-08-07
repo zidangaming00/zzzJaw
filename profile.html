@@ -63,11 +63,6 @@
       color: #ccff00;
       margin-bottom: 12px;
     }
-    .status-bar-top.error {
-      background-color: rgba(255, 77, 77, 0.1);
-      border-color: rgba(255, 77, 77, 0.3);
-      color: #ff4d4d;
-    }
     .pulse-dot {
       width: 6px;
       height: 6px;
@@ -75,10 +70,6 @@
       border-radius: 50%;
       box-shadow: 0 0 8px #ccff00;
       animation: pulse 1.5s infinite;
-    }
-    .status-bar-top.error .pulse-dot {
-      background-color: #ff4d4d;
-      box-shadow: 0 0 8px #ff4d4d;
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -199,7 +190,7 @@
       border-radius: 50%;
       border: 2px solid #ffffff;
       overflow: hidden;
-      background-color: #222; /* Warna gelap pencegah gambar pecah */
+      background-color: #222;
       flex-shrink: 0;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     }
@@ -377,7 +368,7 @@
       font-size: 20px;
       font-weight: 900;
       display: inline-block;
-      max-width: 120px; /* Lebar dibatasi agar tidak melar */
+      max-width: 120px;
     }
     .stat-subvalue {
       font-size: 13px;
@@ -763,7 +754,6 @@
     async function fetchEnkaData(uid) {
       document.getElementById("top-uid-label").textContent = `UID: ${uid}`;
       document.getElementById("top-status-text").textContent = `Fetching Signal...`;
-      document.getElementById("top-status-bar").classList.remove("error");
 
       setSkeletonState(true);
 
@@ -771,19 +761,28 @@
 
       try {
         const response = await fetch(targetUrl);
-        if (!response.ok) throw new Error(`HTTP Status ${response.status}`);
+        if (!response.ok) {
+          throw new Error("uid_not_found");
+        }
 
         const data = await response.json();
         
-        if (data.error) throw new Error(data.error);
+        if (data.error || (!data.playerInfo && !data.avatarInfoList)) {
+          throw new Error("uid_not_found");
+        }
 
         processEnkaResponse(uid, data);
         document.getElementById("top-status-text").textContent = `Signal Connected`;
       } catch (error) {
-        console.warn("Worker fetch fallback...", error);
-        document.getElementById("top-status-bar").classList.add("error");
-        document.getElementById("top-status-text").textContent = `Signal Offline (Mock Data)`;
-        renderFallbackProfile(uid);
+        console.warn("Gagal mengambil data, mengalihkan ke index...", error);
+        
+        let errorType = "uid_not_found";
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          errorType = "network_error";
+        }
+        
+        // Redirect otomatis balik ke index dengan query parameter error
+        window.location.href = `/?error=${errorType}&uid=${encodeURIComponent(uid)}`;
       } finally {
         setSkeletonState(false);
       }
@@ -824,7 +823,7 @@
 
     function parseAvatarList(avatarList, dictionary) {
       if (!avatarList || avatarList.length === 0) {
-        return generateDefaultAgents();
+        return [];
       }
 
       return avatarList.map((avatar, idx) => {
@@ -842,49 +841,6 @@
           icon: avatar.icon ? `https://enka.network/ui/zzz/${avatar.icon}.png` : "https://enka.network/ui/zzz/IconRoleCircle44.png"
         };
       });
-    }
-
-    function generateDefaultAgents() {
-      return [
-        { id: 1, name: "Ye Shunguang", level: 60, mindscape: 0, critRate: 50.6, critDmg: 224.4, icon: "https://enka.network/ui/zzz/IconRoleCircle55.png" },
-        { id: 2, name: "Yixuan", level: 60, mindscape: 1, critRate: 48.2, critDmg: 176.4, icon: "https://enka.network/ui/zzz/IconRoleCircle44.png" },
-        { id: 3, name: "Dialyn", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle54.png" },
-        { id: 4, name: "Norma", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle65.png" },
-        { id: 5, name: "Starlight - Billy", level: 60, mindscape: 1, critRate: 43.4, critDmg: 166.8, icon: "https://enka.network/ui/zzz/IconRoleCircle62.png" },
-        { id: 6, name: "Lucia", level: 60, mindscape: 1, critRate: 31.4, critDmg: 74.0, icon: "https://enka.network/ui/zzz/IconRoleCircle50.png" },
-        { id: 7, name: "Remielle", level: 60, mindscape: 0, critRate: 7.4, critDmg: 78.8, icon: "https://enka.network/ui/zzz/IconRoleCircle67.png" }
-      ];
-    }
-
-    function renderFallbackProfile(uid) {
-      const fallbackData = {
-        appName: "ZzzJaw",
-        lastUpdated: "Last updated just now",
-        profile: {
-          name: `Proxy_${uid.slice(-4)}`,
-          avatarUrl: "https://enka.network/ui/zzz/IconInterKnotRole0062.png",
-          server: "ASIA",
-          ilLevel: "IL 60",
-          tag: `UID: ${uid}`,
-          classTitle: "Low Class Warrior",
-          shiyuScore: 5,
-          assaultScore: 8,
-          hardcoreScore: 2506
-        },
-        statCard: {
-          roleIcon: "https://enka.network/ui/zzz/IconRoleCircle44.png",
-          weaponIcon: "https://enka.network/ui/zzz/Weapon_S_1371.png",
-          label: "Solo Burst",
-          value: "Top 65.5%",
-          subvalue: "13204 / 20.2k"
-        },
-        leaderboard: generateDefaultAgents()
-      };
-
-      renderProfile(fallbackData);
-      fullLeaderboardList = fallbackData.leaderboard;
-      currentFilteredList = [...fullLeaderboardList];
-      renderLeaderboard();
     }
 
     function renderProfile(data) {
