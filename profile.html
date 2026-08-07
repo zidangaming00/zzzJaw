@@ -37,7 +37,6 @@
       user-select: none;
       border-radius: 4px;
     }
-    /* Skeleton khusus di dalam box hijau agar menyatu sempurna */
     .stat-info .skeleton {
       background: linear-gradient(90deg, rgba(0, 0, 0, 0.15) 25%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.15) 75%);
       background-size: 200% 100%;
@@ -300,8 +299,6 @@
       font-weight: 900;
       color: #ffffff;
     }
-    
-    /* Stat Card & Overflow Lock */
     .stat-card {
       background-color: #171719;
       border-radius: 0 0 16px 16px;
@@ -310,7 +307,7 @@
       z-index: 1;
       margin-top: -10px;
       margin-bottom: 16px;
-      overflow: hidden; /* Mengunci agar isi tidak melar ke luar */
+      overflow: hidden;
     }
     .stat-main-container {
       display: flex;
@@ -370,7 +367,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      overflow: hidden; /* Mencegah pelebaran horizontal */
+      overflow: hidden;
       color: #ffffff;
       z-index: 1;
     }
@@ -436,6 +433,8 @@
       cursor: pointer;
       font-weight: 600;
     }
+
+    /* Container Tabel Rapi & Tidak Mepet Kanan */
     .table-container {
       background-color: #1c1c1f;
       border-radius: 12px;
@@ -445,14 +444,17 @@
       width: 100%;
     }
     .table-content {
-      min-width: 540px;
+      min-width: 100%;
+      width: max-content;
+      padding-right: 16px; /* Memberikan gap aman di sisi kanan saat scroll */
     }
+    /* Mengatur Proporsi Kolom Tabel Secara Seimbang */
     .table-header {
       display: grid;
-      grid-template-columns: 24px 240px 90px max-content;
+      grid-template-columns: 28px 170px 75px 80px 170px;
       gap: 12px;
-      padding: 12px 14px;
-      font-size: 14px;
+      padding: 12px 16px;
+      font-size: 13px;
       color: #aaaaaa;
       border-bottom: 1px solid #2a2a2e;
       font-weight: 600;
@@ -460,11 +462,11 @@
     }
     .table-row {
       display: grid;
-      grid-template-columns: 24px 240px 90px max-content;
+      grid-template-columns: 28px 170px 75px 80px 170px;
       gap: 12px;
-      padding: 10px 14px;
+      padding: 10px 16px;
       align-items: center;
-      font-size: 14px;
+      font-size: 13px;
       border-bottom: 1px solid #242428;
     }
     .table-row:last-child {
@@ -505,11 +507,11 @@
     .player-name {
       color: #e5e5e5;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       white-space: nowrap;
     }
     .mindscape-badge {
-      width: 40px;
+      width: 36px;
       height: 24px;
       border-radius: 12px;
       display: flex;
@@ -525,14 +527,25 @@
     }
     .mindscape-1 {
       background-color: #1e3a52;
-      color: #ffffff;
+      color: #ccff00;
+    }
+    .core-badge {
+      background-color: #292115;
+      color: #ffaa00;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 170, 0, 0.3);
+      justify-self: start;
     }
     .crit-ratio-cell {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       color: #e5e5e5;
-      font-size: 13px;
+      font-size: 12px;
+      font-weight: 700;
       white-space: nowrap;
     }
     .crit-item {
@@ -540,6 +553,7 @@
       align-items: center;
       gap: 4px;
     }
+
     .pagination-controls {
       display: flex;
       justify-content: space-between;
@@ -705,8 +719,9 @@
     <div class="table-content">
       <div class="table-header">
         <span>#</span>
-        <span>Name</span>
+        <span>Agent</span>
         <span>Mindscape</span>
+        <span>Core</span>
         <span>Crit Ratio</span>
       </div>
       <div id="leaderboard-rows"></div>
@@ -779,9 +794,10 @@
           <div class="player-cell">
             <div class="player-mini-avatar skeleton"></div>
             <span class="level-badge skeleton">Lv. --</span>
-            <span class="player-name skeleton">Loading Agent...</span>
+            <span class="player-name skeleton">Loading...</span>
           </div>
           <div class="mindscape-badge skeleton">0</div>
+          <div class="core-badge skeleton">F</div>
           <div class="crit-ratio-cell skeleton">00.0% / 000.0%</div>
         `;
         container.appendChild(row);
@@ -916,13 +932,23 @@
       renderLeaderboard();
     }
 
+    // Mengurai Data Agent Lengkap Dari JSON Enka ZZZ
     function parseAvatarList(avatarList, dictionary) {
       if (!avatarList || avatarList.length === 0) return [];
+
+      const CORE_SKILL_LETTERS = ["A", "B", "C", "D", "E", "F"];
 
       return avatarList.map((avatar, idx) => {
         const agentId = avatar.Id || avatar.id || avatar.avatarId;
         const agentName = AGENT_NAMES[agentId] || (dictionary[agentId]?.name) || `Agent ${agentId}`;
         
+        // Ambil Core Skill Enhancement (Tingkatan A - F)
+        const coreEnhance = avatar.CoreSkillEnhancement || avatar.coreSkillEnhancement || 1;
+        const coreLetter = CORE_SKILL_LETTERS[Math.min(coreEnhance - 1, 5)] || "A";
+
+        // Hitung Mindscape (Talent Level)
+        const mindscape = avatar.TalentLevel || avatar.talentLevel || avatar.rank || 0;
+
         const critRate = 50.0;
         const critDmg = 150.0;
 
@@ -932,7 +958,8 @@
           id: idx + 1,
           name: agentName,
           level: avatar.Level || avatar.level || 60,
-          mindscape: avatar.TalentLevel || avatar.talentLevel || avatar.rank || 0,
+          mindscape: mindscape,
+          coreSkill: `Core ${coreLetter}`,
           critRate: critRate,
           critDmg: critDmg,
           icon: iconUrl
@@ -1012,6 +1039,7 @@
             <span class="player-name">${item.name}</span>
           </div>
           <div class="mindscape-badge ${mindscapeClass}">${item.mindscape}</div>
+          <div class="core-badge">${item.coreSkill}</div>
           <div class="crit-ratio-cell">
             <div class="crit-item"><span class="crit-icon">⚙️</span> ${item.critRate.toFixed(1)}%</div>
             <div class="crit-item"><span class="crit-icon">💥</span> ${item.critDmg.toFixed(1)}%</div>
