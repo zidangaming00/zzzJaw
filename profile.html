@@ -26,29 +26,55 @@
       flex-direction: column;
     }
 
-    /* Loading & Error Overlays */
-    .status-overlay {
-      background-color: #1a1a1e;
-      border: 1px dashed rgba(204, 255, 0, 0.3);
-      border-radius: 12px;
-      padding: 24px 16px;
-      text-align: center;
-      margin: 20px 0;
+    /* Skeleton / Bone Loading Animation */
+    .skeleton {
+      background: linear-gradient(90deg, #1c1c1f 25%, #2a2a2e 50%, #1c1c1f 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      color: transparent !important;
+      border-color: transparent !important;
+      pointer-events: none;
+      user-select: none;
+      border-radius: 4px;
+    }
+    .skeleton img {
+      opacity: 0 !important;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Status Bar Top Indicator */
+    .status-bar-top {
+      background-color: rgba(204, 255, 0, 0.1);
+      border: 1px solid rgba(204, 255, 0, 0.25);
+      border-radius: 8px;
+      padding: 8px 12px;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ccff00;
+      margin-bottom: 12px;
     }
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid rgba(204, 255, 0, 0.2);
-      border-top-color: #ccff00;
+    .status-bar-top.error {
+      background-color: rgba(255, 77, 77, 0.1);
+      border-color: rgba(255, 77, 77, 0.3);
+      color: #ff4d4d;
+    }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #ccff00;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      box-shadow: 0 0 8px #ccff00;
+      animation: pulse 1.5s infinite;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
     }
 
     /* Navbar Header */
@@ -56,7 +82,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .logo-container {
       display: flex;
@@ -181,6 +207,8 @@
       letter-spacing: -0.3px;
       word-break: break-word;
       text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+      min-width: 100px;
+      min-height: 22px;
     }
     .profile-badges-container {
       display: flex;
@@ -554,7 +582,7 @@
   </style>
 </head>
 <body>
-  <!-- Navbar -->
+  <!-- Navbar Header -->
   <div class="navbar">
     <a href="/" class="logo-container">
       <div class="logo-icon">🌐</div>
@@ -567,96 +595,106 @@
     </div>
   </div>
 
-  <!-- Status Overlay (Loading / Error) -->
-  <div class="status-overlay" id="status-overlay">
-    <div class="spinner" id="status-spinner"></div>
-    <span id="status-message" style="font-size: 13px; color: #ccff00; font-weight: 700;">Mengambil data dari Signal Enka...</span>
+  <!-- Indicator Live Status Top Bar -->
+  <div class="status-bar-top" id="top-status-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div class="pulse-dot"></div>
+      <span id="top-status-text">Synchronizing Enka Signal...</span>
+    </div>
+    <span style="font-family: monospace; opacity: 0.6;" id="top-uid-label">UID: -</span>
   </div>
 
-  <!-- Content Section (Hidden until loaded) -->
-  <div id="profile-content" style="display: none;">
-    <!-- Sub-header -->
-    <div class="sub-header">
-      <span class="last-updated" id="last-updated">Last updated just now</span>
-      <div class="action-buttons">
-        <button class="btn-update" id="btn-update">Update</button>
-        <a href="/" class="icon-btn">🔍</a>
-        <button class="icon-btn">⭐</button>
-      </div>
+  <!-- Sub-header -->
+  <div class="sub-header">
+    <span class="last-updated" id="last-updated">Last updated just now</span>
+    <div class="action-buttons">
+      <button class="btn-update" id="btn-update">Update</button>
+      <a href="/" class="icon-btn">🔍</a>
+      <button class="icon-btn">⭐</button>
     </div>
+  </div>
 
-    <!-- Profile Card -->
-    <div class="profile-card">
-      <div class="profile-top">
-        <div class="avatar-section">
-          <div class="avatar"><img id="profile-avatar" src="" alt="Avatar"></div>
-          <div class="profile-name" id="profile-name">-</div>
+  <!-- Profile Card -->
+  <div class="profile-card">
+    <div class="profile-top">
+      <div class="avatar-section">
+        <div class="avatar"><img id="profile-avatar" src="" alt="Avatar"></div>
+        <div class="profile-name skeleton-target" id="profile-name">Loading...</div>
+      </div>
+      <div class="profile-badges-container">
+        <div class="server-il-row">
+          <div class="badge-capsule skeleton-target" id="badge-server">ASIA</div>
+          <div class="badge-capsule skeleton-target" id="badge-il">IL --</div>
         </div>
-        <div class="profile-badges-container">
-          <div class="server-il-row">
-            <div class="badge-capsule" id="badge-server">ASIA</div>
-            <div class="badge-capsule" id="badge-il">IL 60</div>
+        <div class="stat-icon-badges-row" id="badge-icons-row">
+          <div class="stat-icon-card">
+            <div class="stat-icon-box skeleton-target">--</div>
           </div>
-          <div class="stat-icon-badges-row" id="badge-icons-row"></div>
-        </div>
-      </div>
-      <div class="profile-tag" id="profile-tag">UID: -</div>
-    </div>
-
-    <!-- Section Title Card -->
-    <div class="section-title-wrapper">
-      <div class="section-title" id="class-title">Low Class Warrior</div>
-    </div>
-
-    <!-- Stat Card -->
-    <div class="stat-card">
-      <div class="stat-main-container">
-        <div class="stat-black-container">
-          <div class="sub-avatar"><img id="stat-role-icon" src="https://enka.network/ui/zzz/IconRoleCircle44.png" alt="Character"></div>
-          <div class="stat-badge-icon"><img id="stat-weapon-icon" src="https://enka.network/ui/zzz/Weapon_S_1371.png" alt="W-Engine"></div>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label" id="stat-label">Solo Burst</div>
-          <div class="stat-value" id="stat-value">Top 65.5%</div>
-          <div class="stat-subvalue" id="stat-subvalue">13204 / 20.2k</div>
+          <div class="stat-icon-card">
+            <div class="stat-icon-box skeleton-target">--</div>
+          </div>
+          <div class="stat-icon-card">
+            <div class="stat-icon-box skeleton-target">--</div>
+          </div>
         </div>
       </div>
     </div>
+    <div class="profile-tag skeleton-target" id="profile-tag">UID: --------</div>
+  </div>
 
-    <!-- Leaderboard Button -->
-    <button class="leaderboard-btn">Leaderboards</button>
+  <!-- Section Title Card -->
+  <div class="section-title-wrapper">
+    <div class="section-title skeleton-target" id="class-title">Inter-Knot Proxy</div>
+  </div>
 
-    <!-- Filter -->
-    <div class="filter-box">
-      <span>Filter by...</span>
-      <select id="filter-select">
-        <option value="all">All Characters</option>
-        <option value="m1">Mindscape &gt;= 1</option>
-      </select>
-    </div>
-
-    <!-- Table -->
-    <div class="table-container">
-      <div class="table-content">
-        <div class="table-header">
-          <span>#</span>
-          <span>Name</span>
-          <span>Mindscape</span>
-          <span>Crit Ratio</span>
-        </div>
-        <div id="leaderboard-rows"></div>
+  <!-- Stat Card -->
+  <div class="stat-card">
+    <div class="stat-main-container">
+      <div class="stat-black-container">
+        <div class="sub-avatar"><img id="stat-role-icon" src="https://enka.network/ui/zzz/IconRoleCircle44.png" alt="Character"></div>
+        <div class="stat-badge-icon"><img id="stat-weapon-icon" src="https://enka.network/ui/zzz/Weapon_S_1371.png" alt="W-Engine"></div>
+      </div>
+      <div class="stat-info">
+        <div class="stat-label" id="stat-label">Solo Burst</div>
+        <div class="stat-value skeleton-target" id="stat-value">Top --%</div>
+        <div class="stat-subvalue" id="stat-subvalue">Active Character Showcase</div>
       </div>
     </div>
+  </div>
 
-    <!-- Pagination Controls -->
-    <div class="pagination-controls">
-      <div class="pagination-nav">
-        <button class="page-btn" id="prev-page-btn">Prev</button>
-        <select class="per-page-select" id="page-select"></select>
-        <button class="page-btn" id="next-page-btn">Next</button>
+  <!-- Leaderboard Button -->
+  <button class="leaderboard-btn">Leaderboards</button>
+
+  <!-- Filter -->
+  <div class="filter-box">
+    <span>Filter by...</span>
+    <select id="filter-select">
+      <option value="all">All Characters</option>
+      <option value="m1">Mindscape &gt;= 1</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <div class="table-content">
+      <div class="table-header">
+        <span>#</span>
+        <span>Name</span>
+        <span>Mindscape</span>
+        <span>Crit Ratio</span>
       </div>
-      <span class="showing-text" id="showing-text">Showing 0 of 0</span>
+      <div id="leaderboard-rows"></div>
     </div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="pagination-controls">
+    <div class="pagination-nav">
+      <button class="page-btn" id="prev-page-btn">Prev</button>
+      <select class="per-page-select" id="page-select"></select>
+      <button class="page-btn" id="next-page-btn">Next</button>
+    </div>
+    <span class="showing-text" id="showing-text">Showing 0 of 0</span>
   </div>
 
   <!-- Footer -->
@@ -668,49 +706,76 @@
   <script>
     let currentPage = 1;
     const itemsPerPage = 5;
+    let fullLeaderboardList = [];
     let currentFilteredList = [];
 
-    // URL Param Extractor
+    // Baca Parameter UID dari URL
     function getUIDFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('uid') || '1314841424'; // Default ke ID user jika kosong
+      return urlParams.get('uid') || '1314841424';
     }
 
-    // Fetch ZZZ Data from Enka.network
-    async function fetchEnkaData(uid) {
-      const overlay = document.getElementById("status-overlay");
-      const content = document.getElementById("profile-content");
-      const statusMsg = document.getElementById("status-message");
-      const spinner = document.getElementById("status-spinner");
+    // Aktifkan Efek Bone/Skeleton Loading pada UI
+    function setSkeletonState(isLoading) {
+      const targets = document.querySelectorAll('.skeleton-target');
+      targets.forEach(el => {
+        if (isLoading) el.classList.add('skeleton');
+        else el.classList.remove('skeleton');
+      });
 
-      overlay.style.display = "flex";
-      content.style.display = "none";
-      statusMsg.style.color = "#ccff00";
-      statusMsg.textContent = `Mengambil data Enka ZZZ (UID: ${uid})...`;
+      if (isLoading) {
+        renderSkeletonTable();
+      }
+    }
+
+    function renderSkeletonTable() {
+      const container = document.getElementById("leaderboard-rows");
+      container.innerHTML = "";
+      for (let i = 0; i < 3; i++) {
+        const row = document.createElement("div");
+        row.className = "table-row";
+        row.innerHTML = `
+          <span class="row-number skeleton">0</span>
+          <div class="player-cell">
+            <div class="player-mini-avatar skeleton"></div>
+            <span class="level-badge skeleton">Lv. --</span>
+            <span class="player-name skeleton">Loading Agent...</span>
+          </div>
+          <div class="mindscape-badge skeleton">0</div>
+          <div class="crit-ratio-cell skeleton">00.0% / 000.0%</div>
+        `;
+        container.appendChild(row);
+      }
+    }
+
+    // Fetch Enka Network ZZZ API
+    async function fetchEnkaData(uid) {
+      document.getElementById("top-uid-label").textContent = `UID: ${uid}`;
+      document.getElementById("top-status-text").textContent = `Fetching Enka Data...`;
+      document.getElementById("top-status-bar").classList.remove("error");
+
+      setSkeletonState(true);
 
       const targetUrl = `https://enka.network/api/zzz/uid/${uid}`;
       const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
       try {
         let response = await fetch(targetUrl);
-        if (!response.ok) {
-          // Fallback ke proxy jika terkena CORS
-          response = await fetch(proxyUrl);
-        }
+        if (!response.ok) response = await fetch(proxyUrl);
 
-        if (!response.ok) throw new Error("Gagal terhubung ke API Enka ZZZ.");
+        if (!response.ok) throw new Error("API Limit / UID Not Found");
 
         const data = await response.json();
         processEnkaResponse(uid, data);
 
-        overlay.style.display = "none";
-        content.style.display = "block";
+        document.getElementById("top-status-text").textContent = `Enka Signal Connected`;
       } catch (error) {
-        console.warn("Fetch langsung gagal, mencoba fallback data mock...", error);
-        // Fallback Mock Parser jika API mengalami error / UID terbatas
+        console.warn("Menggunakan data fallback/mock...", error);
+        document.getElementById("top-status-bar").classList.add("error");
+        document.getElementById("top-status-text").textContent = `Signal Offline (Mock Data)`;
         renderFallbackProfile(uid);
-        overlay.style.display = "none";
-        content.style.display = "block";
+      } finally {
+        setSkeletonState(false);
       }
     }
 
@@ -726,7 +791,7 @@
           server: uid.startsWith('1') ? "ASIA" : "GLOBAL",
           ilLevel: `IL ${playerInfo.level || 60}`,
           tag: `UID: ${uid}`,
-          classTitle: "Low Class Warrior",
+          classTitle: playerInfo.signature || "Inter-Knot Authorized Proxy",
           shiyuScore: playerInfo.shiyuFloor || 5,
           assaultScore: playerInfo.assaultFloor || 8,
           hardcoreScore: playerInfo.maxScore || 2506
@@ -734,36 +799,53 @@
         statCard: {
           roleIcon: "https://enka.network/ui/zzz/IconRoleCircle44.png",
           weaponIcon: "https://enka.network/ui/zzz/Weapon_S_1371.png",
-          label: "Solo Burst",
-          value: "Top 65.5%",
-          subvalue: "13204 / 20.2k"
+          label: "Agent Showcase",
+          value: `Top ${playerInfo.worldLevel || 'S'} Rank`,
+          subvalue: `Total Agents: ${(data.avatarInfoList || []).length}`
         },
-        leaderboard: parseAvatarList(data.avatarInfoList || [])
+        leaderboard: parseAvatarList(data.avatarInfoList || [], data.characterDictionary || {})
       };
 
       renderProfile(profileData);
-      currentFilteredList = profileData.leaderboard;
+      fullLeaderboardList = profileData.leaderboard;
+      currentFilteredList = [...fullLeaderboardList];
       renderLeaderboard();
     }
 
-    function parseAvatarList(avatarList) {
+    // Memproses SELURUH Agent yang Ditemukan di Response API Enka
+    function parseAvatarList(avatarList, dictionary) {
       if (!avatarList || avatarList.length === 0) {
-        return [
-          { id: 1, name: "Ye Shunguang", level: 60, mindscape: 0, critRate: 50.6, critDmg: 224.4, icon: "https://enka.network/ui/zzz/IconRoleCircle55.png" },
-          { id: 2, name: "Yixuan", level: 60, mindscape: 1, critRate: 48.2, critDmg: 176.4, icon: "https://enka.network/ui/zzz/IconRoleCircle44.png" },
-          { id: 3, name: "Dialyn", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle54.png" }
-        ];
+        return generateDefaultAgents();
       }
 
-      return avatarList.map((avatar, idx) => ({
-        id: idx + 1,
-        name: avatar.name || `Agent ${avatar.avatarId}`,
-        level: avatar.level || 60,
-        mindscape: avatar.rank || 0,
-        critRate: avatar.stats?.critRate ? (avatar.stats.critRate * 100) : 50.0,
-        critDmg: avatar.stats?.critDmg ? (avatar.stats.critDmg * 100) : 150.0,
-        icon: avatar.icon ? `https://enka.network/ui/zzz/${avatar.icon}.png` : "https://enka.network/ui/zzz/IconRoleCircle44.png"
-      }));
+      return avatarList.map((avatar, idx) => {
+        // Ambil nama dari dictionary atau ID
+        const agentName = avatar.name || (dictionary[avatar.avatarId]?.name) || `Agent ${avatar.avatarId}`;
+        const critRate = avatar.fightPropMap?.[201] ? (avatar.fightPropMap[201] * 100) : (avatar.stats?.critRate ? avatar.stats.critRate * 100 : 50.0);
+        const critDmg = avatar.fightPropMap?.[202] ? (avatar.fightPropMap[202] * 100) : (avatar.stats?.critDmg ? avatar.stats.critDmg * 100 : 150.0);
+
+        return {
+          id: idx + 1,
+          name: agentName,
+          level: avatar.level || 60,
+          mindscape: avatar.rank || avatar.mindscape || 0,
+          critRate: critRate,
+          critDmg: critDmg,
+          icon: avatar.icon ? `https://enka.network/ui/zzz/${avatar.icon}.png` : "https://enka.network/ui/zzz/IconRoleCircle44.png"
+        };
+      });
+    }
+
+    function generateDefaultAgents() {
+      return [
+        { id: 1, name: "Ye Shunguang", level: 60, mindscape: 0, critRate: 50.6, critDmg: 224.4, icon: "https://enka.network/ui/zzz/IconRoleCircle55.png" },
+        { id: 2, name: "Yixuan", level: 60, mindscape: 1, critRate: 48.2, critDmg: 176.4, icon: "https://enka.network/ui/zzz/IconRoleCircle44.png" },
+        { id: 3, name: "Dialyn", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle54.png" },
+        { id: 4, name: "Norma", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle65.png" },
+        { id: 5, name: "Starlight - Billy", level: 60, mindscape: 1, critRate: 43.4, critDmg: 166.8, icon: "https://enka.network/ui/zzz/IconRoleCircle62.png" },
+        { id: 6, name: "Lucia", level: 60, mindscape: 1, critRate: 31.4, critDmg: 74.0, icon: "https://enka.network/ui/zzz/IconRoleCircle50.png" },
+        { id: 7, name: "Remielle", level: 60, mindscape: 0, critRate: 7.4, critDmg: 78.8, icon: "https://enka.network/ui/zzz/IconRoleCircle67.png" }
+      ];
     }
 
     function renderFallbackProfile(uid) {
@@ -771,7 +853,7 @@
         appName: "ZzzJaw",
         lastUpdated: "Last updated just now",
         profile: {
-          name: `Proxy_${uid}`,
+          name: `Proxy_${uid.slice(-4)}`,
           avatarUrl: "https://enka.network/ui/zzz/IconInterKnotRole0062.png",
           server: "ASIA",
           ilLevel: "IL 60",
@@ -788,19 +870,12 @@
           value: "Top 65.5%",
           subvalue: "13204 / 20.2k"
         },
-        leaderboard: [
-          { id: 1, name: "Ye Shunguang", level: 60, mindscape: 0, critRate: 50.6, critDmg: 224.4, icon: "https://enka.network/ui/zzz/IconRoleCircle55.png" },
-          { id: 2, name: "Yixuan", level: 60, mindscape: 1, critRate: 48.2, critDmg: 176.4, icon: "https://enka.network/ui/zzz/IconRoleCircle44.png" },
-          { id: 3, name: "Dialyn", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle54.png" }
-        ],
-        footer: {
-          brand: "ZzzJaw",
-          subtitle: "Penampil data akun ZZZ"
-        }
+        leaderboard: generateDefaultAgents()
       };
 
       renderProfile(fallbackData);
-      currentFilteredList = fallbackData.leaderboard;
+      fullLeaderboardList = fallbackData.leaderboard;
+      currentFilteredList = [...fullLeaderboardList];
       renderLeaderboard();
     }
 
@@ -864,8 +939,8 @@
           </div>
           <div class="mindscape-badge ${mindscapeClass}">${item.mindscape}</div>
           <div class="crit-ratio-cell">
-            <div class="crit-item"><span class="crit-icon">⚙️</span> ${item.critRate.toFixed(1)}</div>
-            <div class="crit-item"><span class="crit-icon">💥</span> ${item.critDmg.toFixed(1)}</div>
+            <div class="crit-item"><span class="crit-icon">⚙️</span> ${item.critRate.toFixed(1)}%</div>
+            <div class="crit-item"><span class="crit-icon">💥</span> ${item.critDmg.toFixed(1)}%</div>
           </div>
         `;
         container.appendChild(row);
@@ -889,7 +964,7 @@
       document.getElementById("prev-page-btn").disabled = (currentPage <= 1);
       document.getElementById("next-page-btn").disabled = (currentPage >= totalPages);
 
-      document.getElementById("showing-text").textContent = `Showing page ${currentPage} of ${totalPages}`;
+      document.getElementById("showing-text").textContent = `Showing page ${currentPage} of ${totalPages} (${currentFilteredList.length} Total Agents)`;
     }
 
     // Event Listeners
@@ -916,11 +991,9 @@
     document.getElementById("filter-select").addEventListener("change", (e) => {
       const filterValue = e.target.value;
       if (filterValue === "m1") {
-        currentFilteredList = currentFilteredList.filter(item => item.mindscape >= 1);
+        currentFilteredList = fullLeaderboardList.filter(item => item.mindscape >= 1);
       } else {
-        const uid = getUIDFromURL();
-        fetchEnkaData(uid);
-        return;
+        currentFilteredList = [...fullLeaderboardList];
       }
       currentPage = 1;
       renderLeaderboard();
