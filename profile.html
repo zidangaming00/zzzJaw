@@ -37,8 +37,9 @@
       user-select: none;
       border-radius: 4px;
     }
+    /* Skeleton khusus di dalam box hijau agar menyatu sempurna */
     .stat-info .skeleton {
-      background: linear-gradient(90deg, rgba(0, 0, 0, 0.2) 25%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.2) 75%);
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.15) 25%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.15) 75%);
       background-size: 200% 100%;
     }
     .skeleton img {
@@ -299,6 +300,8 @@
       font-weight: 900;
       color: #ffffff;
     }
+    
+    /* Stat Card & Overflow Lock */
     .stat-card {
       background-color: #171719;
       border-radius: 0 0 16px 16px;
@@ -307,11 +310,13 @@
       z-index: 1;
       margin-top: -10px;
       margin-bottom: 16px;
+      overflow: hidden; /* Mengunci agar isi tidak melar ke luar */
     }
     .stat-main-container {
       display: flex;
       align-items: center;
       width: 100%;
+      overflow: hidden;
     }
     .stat-black-container {
       background-color: #0d0d0e;
@@ -365,24 +370,33 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      white-space: nowrap;
+      overflow: hidden; /* Mencegah pelebaran horizontal */
       color: #ffffff;
       z-index: 1;
     }
     .stat-label {
       font-size: 13px;
       font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .stat-value {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 900;
       display: inline-block;
-      max-width: 120px;
+      width: fit-content;
+      max-width: 100%;
     }
     .stat-subvalue {
-      font-size: 13px;
-      font-weight: 800;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0.9;
     }
+
     .leaderboard-btn {
       width: 100%;
       background-color: #1f1f22;
@@ -667,9 +681,9 @@
         <div class="stat-badge-icon"><img id="stat-weapon-icon" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'></svg>" alt=""></div>
       </div>
       <div class="stat-info">
-        <div class="stat-label" id="stat-label">Solo Burst</div>
-        <div class="stat-value skeleton-target" id="stat-value">Top --%</div>
-        <div class="stat-subvalue" id="stat-subvalue">Active Character Showcase</div>
+        <div class="stat-label" id="stat-label">Agent Showcase</div>
+        <div class="stat-value skeleton-target" id="stat-value">Top Rank</div>
+        <div class="stat-subvalue" id="stat-subvalue">Loading...</div>
       </div>
     </div>
   </div>
@@ -719,7 +733,6 @@
     const WORKER_BASE_URL = "https://zzz.searchdata.workers.dev";
     const FALLBACK_AVATAR = "https://enka.network/ui/zzz/IconInterKnotRole0062.png";
 
-    // Kamus Nama Agent ZZZ
     const AGENT_NAMES = {
       1011: "Anby", 1021: "Nekomata", 1031: "Nicole", 1041: "Soldier 11",
       1051: "Corin", 1061: "Billy", 1081: "Koleda", 1091: "Ben",
