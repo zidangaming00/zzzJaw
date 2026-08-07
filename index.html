@@ -22,7 +22,7 @@
     }
     
     body {
-      background-color: #121212; /* Hitam polos tanpa grid background */
+      background-color: #121212;
       color: #ffffff;
       padding: 16px;
       max-width: 480px;
@@ -31,12 +31,12 @@
       flex-direction: column;
     }
 
-    /* Navbar Header */
+    /* Navbar Header (Disamakan persis dengan profile.html) */
     .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       flex-shrink: 0;
     }
     .logo-container {
@@ -44,15 +44,16 @@
       align-items: center;
       gap: 8px;
       cursor: pointer;
+      text-decoration: none;
     }
     .logo-icon {
       color: #ccff00;
-      font-size: 26px;
+      font-size: 28px;
       font-weight: bold;
     }
     .logo-text {
       color: #ccff00;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
       line-height: 1.1;
       letter-spacing: -0.5px;
@@ -70,53 +71,32 @@
       border-radius: 2px;
     }
 
-    /* Terminal Status Bar */
-    .terminal-bar {
-      background-color: #1a1a1e;
-      border: 1px dashed rgba(204, 255, 0, 0.25);
-      border-radius: 10px;
-      padding: 10px 14px;
+    /* Status Bar Top Indicator (Disamakan persis dengan status-bar-top profile.html) */
+    .status-bar-top {
+      background-color: rgba(204, 255, 0, 0.1);
+      border: 1px solid rgba(204, 255, 0, 0.25);
+      border-radius: 8px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ccff00;
+      margin-bottom: 12px;
       flex-shrink: 0;
     }
-    .status-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
     .pulse-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       background-color: #ccff00;
       border-radius: 50%;
       box-shadow: 0 0 8px #ccff00;
-      animation: pulseGlow 1.8s infinite;
+      animation: pulse 1.5s infinite;
     }
-    @keyframes pulseGlow {
+    @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.3; transform: scale(0.85); }
-    }
-    .terminal-text {
-      font-size: 11px;
-      font-weight: 700;
-      color: #888888;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .terminal-text span {
-      color: #ccff00;
-    }
-    .terminal-tag {
-      font-size: 10px;
-      font-weight: 800;
-      color: rgba(255, 255, 255, 0.4);
-      background-color: rgba(255, 255, 255, 0.05);
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-family: monospace;
+      50% { opacity: 0.3; transform: scale(0.8); }
     }
 
     /* Hero Container (Banner + Form Input) */
@@ -219,19 +199,34 @@
       transform: scale(0.98);
     }
 
+    /* Error Notification Box */
+    .error-box {
+      display: none;
+      margin-top: 14px;
+      background-color: rgba(255, 77, 77, 0.1);
+      border: 1px solid rgba(255, 77, 77, 0.3);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #ff4d4d;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.4;
+      text-align: center;
+    }
+
     /* Footer */
     .footer {
       text-align: center;
-      padding: 16px 0 8px 0;
+      padding: 24px 0 16px 0;
       border-top: 1px solid #1f1f22;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       margin-top: auto;
       flex-shrink: 0;
     }
     .footer-powered {
-      font-size: 12px;
+      font-size: 13px;
       color: #888888;
       font-weight: 600;
     }
@@ -240,7 +235,7 @@
       font-weight: 800;
     }
     .footer-subtitle {
-      font-size: 11px;
+      font-size: 12px;
       color: #555555;
     }
   </style>
@@ -260,13 +255,13 @@
     </div>
   </div>
 
-  <!-- Terminal Status Bar -->
-  <div class="terminal-bar">
-    <div class="status-left">
+  <!-- Status Bar Top (Sama dengan profile.html) -->
+  <div class="status-bar-top">
+    <div style="display: flex; align-items: center; gap: 8px;">
       <div class="pulse-dot"></div>
-      <div class="terminal-text">Signal <span>Ready</span></div>
+      <span>Signal Ready</span>
     </div>
-    <div class="terminal-tag">v1.2.0</div>
+    <span style="font-family: monospace; opacity: 0.6;">v1.2.0</span>
   </div>
 
   <!-- Hero Container -->
@@ -300,6 +295,11 @@
           <span>⚡</span>
         </button>
       </form>
+
+      <!-- Box Notifikasi Error di Bawah Input Box -->
+      <div class="error-box" id="error-box">
+        ⚠️ <span id="error-msg">Data UID tidak ditemukan atau Showcase belum diaktifkan!</span>
+      </div>
     </div>
   </div>
 
@@ -309,5 +309,32 @@
     <div class="footer-subtitle" id="footer-subtitle">Penampil data akun ZZZ</div>
   </div>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get('error');
+      const uid = urlParams.get('uid');
+
+      if (error) {
+        const errorBox = document.getElementById("error-box");
+        const errorMsg = document.getElementById("error-msg");
+        const inputUid = document.getElementById("uid-input");
+
+        if (uid && inputUid) {
+          inputUid.value = uid; // Otomatis mengisi kembali UID yang sempat gagal dicari
+        }
+
+        if (error === "uid_not_found") {
+          errorMsg.textContent = "Data UID tidak ditemukan atau Showcase ZZZ belum diaktifkan secara publik!";
+        } else if (error === "network_error") {
+          errorMsg.textContent = "Gagal terhubung ke server. Periksa koneksi internetmu!";
+        } else {
+          errorMsg.textContent = "Terjadi kesalahan saat mengambil data profil.";
+        }
+
+        errorBox.style.display = "block";
+      }
+    });
+  </script>
 </body>
 </html>
