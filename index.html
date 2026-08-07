@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZzzJaw - Inspect ZZZ Profile</title>
+  <!-- Import Font Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+    }
+    
+    html, body {
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    
+    body {
+      background-color: #121212; /* Hitam polos tanpa grid background */
+      color: #ffffff;
+      padding: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar Header */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .logo-icon {
+      color: #ccff00;
+      font-size: 26px;
+      font-weight: bold;
+    }
+    .logo-text {
+      color: #ccff00;
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+    }
+    .hamburger {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .hamburger span {
+      width: 24px;
+      height: 2px;
+      background-color: #ffffff;
+      border-radius: 2px;
+    }
+
+    /* Terminal Status Bar */
+    .terminal-bar {
+      background-color: #1a1a1e;
+      border: 1px dashed rgba(204, 255, 0, 0.25);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #ccff00;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #ccff00;
+      animation: pulseGlow 1.8s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.85); }
+    }
+    .terminal-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888888;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .terminal-text span {
+      color: #ccff00;
+    }
+    .terminal-tag {
+      font-size: 10px;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.4);
+      background-color: rgba(255, 255, 255, 0.05);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    /* Hero Container (Banner + Form Input) */
+    .hero-container {
+      background: linear-gradient(180deg, rgba(204, 255, 0, 0.05) 0%, rgba(24, 24, 28, 0.9) 100%), #141417;
+      border: 1px solid rgba(204, 255, 0, 0.2);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+    }
+
+    /* Banner Gambar */
+    .card-banner-img {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      display: block;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Area Konten Form */
+    .card-body {
+      padding: 18px 16px;
+      text-align: center;
+    }
+
+    .hero-title {
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .hero-title span {
+      color: #ccff00;
+    }
+    .hero-desc {
+      font-size: 12px;
+      color: #aaaaaa;
+      line-height: 1.4;
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+
+    /* Form Styles */
+    .uid-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      font-size: 15px;
+      color: #888888;
+    }
+    .uid-input {
+      width: 100%;
+      background-color: #09090b;
+      border: 2px solid #2a2a2e;
+      color: #ffffff;
+      padding: 12px 12px 12px 40px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .uid-input:focus {
+      border-color: #ccff00;
+      box-shadow: 0 0 12px rgba(204, 255, 0, 0.2);
+    }
+    .uid-input::placeholder {
+      color: #555555;
+      font-weight: 500;
+    }
+    .btn-search {
+      background-color: #ccff00;
+      color: #121212;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.1s ease, background-color 0.2s ease;
+      box-shadow: 0 4px 14px rgba(204, 255, 0, 0.25);
+    }
+    .btn-search:active {
+      transform: scale(0.98);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 16px 0 8px 0;
+      border-top: 1px solid #1f1f22;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+    .footer-powered {
+      font-size: 12px;
+      color: #888888;
+      font-weight: 600;
+    }
+    .footer-powered span {
+      color: #ccff00;
+      font-weight: 800;
+    }
+    .footer-subtitle {
+      font-size: 11px;
+      color: #555555;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar Header -->
+  <div class="navbar">
+    <div class="logo-container">
+      <div class="logo-icon">🌐</div>
+      <div class="logo-text" id="app-logo">ZzzJaw</div>
+    </div>
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Terminal Status Bar -->
+  <div class="terminal-bar">
+    <div class="status-left">
+      <div class="pulse-dot"></div>
+      <div class="terminal-text">Signal <span>Ready</span></div>
+    </div>
+    <div class="terminal-tag">v1.2.0</div>
+  </div>
+
+  <!-- Hero Container -->
+  <div class="hero-container">
+    <img 
+      src="https://assetsio.gnwcdn.com/ZZZ-review-header.jpg?width=1600&height=900&fit=crop&quality=100&format=png&enable=upscale&auto=webp" 
+      alt="ZZZ Banner" 
+      class="card-banner-img"
+    >
+
+    <div class="card-body">
+      <h1 class="hero-title">Cek Stats <span>Agensimu</span></h1>
+      <p class="hero-desc">Masukkan UID Zenless Zone Zero untuk mengecek build agent & statistik akunmu.</p>
+      
+      <form class="uid-form" action="/profile" method="GET" id="search-form">
+        <div class="input-wrapper">
+          <span class="input-icon">🎮</span>
+          <input 
+            type="text" 
+            name="uid" 
+            class="uid-input" 
+            id="uid-input" 
+            placeholder="Masukkan UID ZZZ (misal: 13008920)" 
+            required 
+            pattern="[0-9]+" 
+            maxlength="11"
+          >
+        </div>
+        <button type="submit" class="btn-search">
+          <span>Tampilkan Profil</span>
+          <span>⚡</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer Menempel di Dasar -->
+  <div class="footer">
+    <div class="footer-powered">Powered by <span id="footer-brand">ZzzJaw</span></div>
+    <div class="footer-subtitle" id="footer-subtitle">Penampil data akun ZZZ</div>
+  </div>
+
+</body>
+</html>
