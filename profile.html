@@ -717,17 +717,30 @@
 
   <script>
     const WORKER_BASE_URL = "https://zzz.searchdata.workers.dev";
+    const FALLBACK_AVATAR = "https://enka.network/ui/zzz/IconInterKnotRole0062.png";
+
+    // Kamus Nama Agent ZZZ
+    const AGENT_NAMES = {
+      1011: "Anby", 1021: "Nekomata", 1031: "Nicole", 1041: "Soldier 11",
+      1051: "Corin", 1061: "Billy", 1081: "Koleda", 1091: "Ben",
+      1101: "Anton", 1111: "Grace", 1121: "Rina", 1131: "Lycaon",
+      1141: "Lucy", 1151: "Piper", 1181: "Zhu Yuan", 1191: "Qingyi",
+      1201: "Jane", 1211: "Seth", 1221: "Caesar", 1231: "Burnice",
+      1241: "Yanagi", 1251: "Lighter", 1261: "Harumasa", 1271: "Miyabi",
+      1281: "Astra", 1291: "Evelyn", 1301: "Seth", 1331: "Soukaku",
+      1371: "Ellen", 1401: "Miyabi", 1431: "Koleda", 1451: "Qingyi",
+      1531: "Zhu Yuan", 1571: "Jane", 1581: "Burnice"
+    };
 
     let currentPage = 1;
     const itemsPerPage = 5;
     let fullLeaderboardList = [];
     let currentFilteredList = [];
 
-    // Ambil & Bersihkan UID dari URL
     function getUIDFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
       let rawUid = urlParams.get('uid') || '1314841424';
-      return rawUid.trim().replace(/\D/g, ""); // Hanya ambil angka murni
+      return rawUid.trim().replace(/\D/g, "");
     }
 
     function setSkeletonState(isLoading) {
@@ -773,14 +786,10 @@
 
       try {
         const response = await fetch(targetUrl);
-        
-        if (!response.ok) {
-          throw new Error("HTTP_ERROR_" + response.status);
-        }
+        if (!response.ok) throw new Error("HTTP_ERROR_" + response.status);
 
         const data = await response.json();
 
-        // Validasi JSON (Apakah objek PlayerInfo kosong/tidak ada)
         if (data.error || (!data.PlayerInfo && !data.playerInfo && !data.avatarInfoList)) {
           throw new Error("UID_NOT_FOUND_OR_PRIVATE");
         }
@@ -788,7 +797,7 @@
         processEnkaResponse(uid, data);
         document.getElementById("top-status-text").textContent = `Signal Connected`;
       } catch (error) {
-        console.warn("Koneksi gagal atau UID tidak valid:", error);
+        console.warn("Gagal mengambil data, mengalihkan ke index...", error);
         
         let errorType = "uid_not_found";
         if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
@@ -801,25 +810,23 @@
       }
     }
 
-    // Ekstraksi Nilai dari Struktur JSON ZZZ
     function extractStat(data, statType) {
-      if (!data) return 0;
-      
+      if (!data) return "--";
       const medals = data.PlayerInfo?.SocialDetail?.MedalList || 
                      data.playerInfo?.socialDetail?.medalList || [];
 
-      // Type 11 = Hardcore Boss Score (Nineveh dll)
-      // Type 1 = Shiyu Defense Score
-      // Type 3 = Assault Floor Score
       const typeMap = { 'shiyu': 1, 'assault': 3, 'hardcore': 11 };
+      const foundMedal = medals.find(m => (m.MedalType || m.medalType) === typeMap[statType]);
       
-      const foundMedal = medals.find(m => m.MedalType === typeMap[statType] || m.medalType === typeMap[statType]);
-      return foundMedal ? (foundMedal.MedalScore || foundMedal.medalScore || 0) : 0;
+      if (foundMedal) {
+        const val = foundMedal.MedalScore || foundMedal.medalScore || foundMedal.Value || foundMedal.value;
+        return (val && val > 0) ? val : "--";
+      }
+      return "--";
     }
 
     function extractNickname(data) {
       if (!data) return "Player";
-      
       const profileDetail = data.PlayerInfo?.SocialDetail?.ProfileDetail || 
                             data.playerInfo?.socialDetail?.profileDetail || {};
       const fallbackPInfo = data.PlayerInfo || data.playerInfo || {};
@@ -833,9 +840,8 @@
 
     function extractBio(data) {
       if (!data) return "Inter-Knot Proxy";
-      return data.PlayerInfo?.SocialDetail?.Desc || 
-             data.playerInfo?.socialDetail?.desc || 
-             "Inter-Knot Proxy";
+      const bio = data.PlayerInfo?.SocialDetail?.Desc || data.playerInfo?.socialDetail?.desc;
+      return (bio && bio.trim() !== "") ? bio : "Inter-Knot Proxy";
     }
 
     function extractLevel(data) {
@@ -846,12 +852,10 @@
     }
 
     function processEnkaResponse(uid, data) {
-      // Data Agent List
       const avatarList = data.PlayerInfo?.ShowcaseDetail?.AvatarList || 
                          data.playerInfo?.showcaseDetail?.avatarList || 
                          data.avatarInfoList || [];
 
-      // Data Player Profile
       const nickname = extractNickname(data);
       const bioDesc = extractBio(data);
       const playerLevel = extractLevel(data);
@@ -860,29 +864,26 @@
       const assaultScore = extractStat(data, 'assault');
       const hardcoreScore = extractStat(data, 'hardcore');
       
-      // Ambil Avatar Icon Utama
       const profileDetail = data.PlayerInfo?.SocialDetail?.ProfileDetail || data.playerInfo?.socialDetail?.profileDetail || {};
-      let headIcon = "IconInterKnotRole0062"; // Default
-      if (profileDetail.AvatarId || profileDetail.avatarId) {
-        headIcon = `IconRoleCircle${String(profileDetail.AvatarId || profileDetail.avatarId).slice(-2)}`;
-      }
-      
+      let headIconId = profileDetail.AvatarId || profileDetail.avatarId || 2011;
+      let headIconUrl = `https://enka.network/ui/zzz/IconRoleCircle${String(headIconId).slice(-2)}.png`;
+
       const profileData = {
         appName: "ZzzJaw",
         lastUpdated: "Last updated just now",
         profile: {
           name: nickname,
-          avatarUrl: `https://enka.network/ui/zzz/${headIcon}.png`,
+          avatarUrl: headIconUrl,
           server: uid.startsWith('1') ? "ASIA" : (uid.startsWith('2') ? "AMERICA" : "GLOBAL"),
           ilLevel: `IL ${playerLevel}`,
           tag: `UID: ${uid}`,
           classTitle: bioDesc,
-          shiyuScore: shiyuScore || "--",
-          assaultScore: assaultScore || "--",
-          hardcoreScore: hardcoreScore || "--"
+          shiyuScore: shiyuScore,
+          assaultScore: assaultScore,
+          hardcoreScore: hardcoreScore
         },
         statCard: {
-          roleIcon: "https://enka.network/ui/zzz/IconRoleCircle44.png", // Fallback (Nanti diganti dinamis sesuai agent #1)
+          roleIcon: FALLBACK_AVATAR,
           weaponIcon: "https://enka.network/ui/zzz/Weapon_S_1371.png", 
           label: "Agent Showcase",
           value: `Top Rank`,
@@ -891,7 +892,6 @@
         leaderboard: parseAvatarList(avatarList, data.characterDictionary || {})
       };
 
-      // Ganti Stat Card Icon dengan agent pertama jika ada
       if (profileData.leaderboard.length > 0) {
         profileData.statCard.roleIcon = profileData.leaderboard[0].icon;
         profileData.statCard.label = profileData.leaderboard[0].name;
@@ -908,10 +908,9 @@
 
       return avatarList.map((avatar, idx) => {
         const agentId = avatar.Id || avatar.id || avatar.avatarId;
-        const agentName = (dictionary[agentId]?.name) || `Agent ${agentId}`;
+        const agentName = AGENT_NAMES[agentId] || (dictionary[agentId]?.name) || `Agent ${agentId}`;
         
-        // Perhitungan Crit Kasar jika data mentah ZZZ
-        const critRate = 50.0; // Placeholder karena API mentah ZZZ belum tentu mengurai stats
+        const critRate = 50.0;
         const critDmg = 150.0;
 
         let iconUrl = `https://enka.network/ui/zzz/IconRoleCircle${String(agentId).slice(-2)}.png`;
@@ -928,10 +927,19 @@
       });
     }
 
+    function handleImageError(imgEl) {
+      imgEl.onerror = null;
+      imgEl.src = FALLBACK_AVATAR;
+    }
+
     function renderProfile(data) {
       document.getElementById("app-logo").textContent = data.appName;
       document.getElementById("last-updated").textContent = data.lastUpdated;
-      document.getElementById("profile-avatar").src = data.profile.avatarUrl;
+      
+      const mainAvatarImg = document.getElementById("profile-avatar");
+      mainAvatarImg.onerror = () => handleImageError(mainAvatarImg);
+      mainAvatarImg.src = data.profile.avatarUrl;
+
       document.getElementById("profile-name").textContent = data.profile.name;
       document.getElementById("badge-server").textContent = data.profile.server;
       document.getElementById("badge-il").textContent = data.profile.ilLevel;
@@ -951,7 +959,11 @@
         </div>
       `;
       document.getElementById("class-title").textContent = data.profile.classTitle;
-      document.getElementById("stat-role-icon").src = data.statCard.roleIcon;
+      
+      const roleImg = document.getElementById("stat-role-icon");
+      roleImg.onerror = () => handleImageError(roleImg);
+      roleImg.src = data.statCard.roleIcon;
+
       document.getElementById("stat-weapon-icon").src = data.statCard.weaponIcon;
       document.getElementById("stat-label").textContent = data.statCard.label;
       document.getElementById("stat-value").textContent = data.statCard.value;
@@ -981,7 +993,7 @@
           <span class="row-number">${globalRank}</span>
           <div class="player-cell">
             <div class="player-mini-avatar">
-              <img src="${item.icon}" alt="${item.name}">
+              <img src="${item.icon}" alt="${item.name}" onerror="this.onerror=null;this.src='${FALLBACK_AVATAR}';">
             </div>
             <span class="level-badge">Lv. ${item.level}</span>
             <span class="player-name">${item.name}</span>
