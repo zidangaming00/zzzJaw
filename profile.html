@@ -37,10 +37,6 @@
       user-select: none;
       border-radius: 4px;
     }
-    .stat-info .skeleton {
-      background: linear-gradient(90deg, rgba(0, 0, 0, 0.2) 25%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.2) 75%);
-      background-size: 200% 100%;
-    }
     .skeleton img {
       opacity: 0 !important;
     }
@@ -596,7 +592,7 @@
 <body>
   <!-- Navbar Header -->
   <div class="navbar">
-    <a href="/" class="logo-container">
+    <a href="https://zidangaming00.github.io/zzzJaw/" class="logo-container">
       <div class="logo-icon">🌐</div>
       <div class="logo-text" id="app-logo">ZzzJaw</div>
     </a>
@@ -621,7 +617,7 @@
     <span class="last-updated" id="last-updated">Last updated just now</span>
     <div class="action-buttons">
       <button class="btn-update" id="btn-update">Update</button>
-      <a href="/" class="icon-btn">🔍</a>
+      <a href="https://zidangaming00.github.io/zzzJaw/" class="icon-btn">🔍</a>
       <button class="icon-btn">⭐</button>
     </div>
   </div>
@@ -723,9 +719,11 @@
     let fullLeaderboardList = [];
     let currentFilteredList = [];
 
+    // Ambil & Bersihkan UID dari URL
     function getUIDFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('uid') || '1314841424';
+      let rawUid = urlParams.get('uid') || '1314841424';
+      return rawUid.trim().replace(/\D/g, ""); // Hanya ambil angka murni
     }
 
     function setSkeletonState(isLoading) {
@@ -771,40 +769,57 @@
 
       try {
         const response = await fetch(targetUrl);
+        
         if (!response.ok) {
-          throw new Error("HTTP error " + response.status);
+          throw new Error("HTTP_ERROR_" + response.status);
         }
 
         const data = await response.json();
 
-        // Validasi Fleksibel
-        if (!data || data.error) {
-          throw new Error(data?.error || "API Error");
+        if (data.error) {
+          throw new Error(data.error);
         }
 
         processEnkaResponse(uid, data);
         document.getElementById("top-status-text").textContent = `Signal Connected`;
       } catch (error) {
-        console.warn("Gagal terhubung ke Worker API, memuat mode offline/mock...", error);
-        document.getElementById("top-status-bar").classList.add("error");
-        document.getElementById("top-status-text").textContent = `Signal Offline (Mock Preview)`;
+        console.warn("Koneksi Enka gagal atau UID tidak valid:", error);
         
-        // Memuat Tampilan Preview tanpa me-redirect halaman ke index!
+        // Peringatan di Top Status Bar tanpa me-redirect paksa!
+        document.getElementById("top-status-bar").classList.add("error");
+        document.getElementById("top-status-text").textContent = `Signal Offline (Showcase Unavailable)`;
+        
+        // Render fallback mock data agar halaman tidak kosong
         renderFallbackProfile(uid);
       } finally {
         setSkeletonState(false);
       }
     }
 
+    // Ekstraksi Nickname secara Dalam & Luas
+    function extractNickname(data, uid) {
+      if (!data) return `Proxy_${uid.slice(-4)}`;
+      
+      const pInfo = data.playerInfo || data.player || data.profile || {};
+      
+      return pInfo.nickname || 
+             pInfo.name || 
+             pInfo.nick || 
+             data.nickname || 
+             data.name || 
+             `Proxy_${uid.slice(-4)}`;
+    }
+
     function processEnkaResponse(uid, data) {
-      const playerInfo = data.playerInfo || data.player || {};
+      const playerInfo = data.playerInfo || data.player || data.profile || {};
       const avatarList = data.avatarInfoList || data.avatars || data.avatarList || [];
+      const nickname = extractNickname(data, uid);
       
       const profileData = {
         appName: "ZzzJaw",
         lastUpdated: "Last updated just now",
         profile: {
-          name: playerInfo.nickname || `Proxy_${uid.slice(-4)}`,
+          name: nickname,
           avatarUrl: playerInfo.headIcon ? `https://enka.network/ui/zzz/${playerInfo.headIcon}.png` : "https://enka.network/ui/zzz/IconInterKnotRole0062.png",
           server: uid.startsWith('1') ? "ASIA" : "GLOBAL",
           ilLevel: `IL ${playerInfo.level || 60}`,
