@@ -28,7 +28,7 @@
 
     /* Skeleton / Bone Loading Animation */
     .skeleton {
-      background: linear-gradient(90deg, #1c1c1f 25%, #2a2a2e 50%, #1c1c1f 75%);
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.05) 75%);
       background-size: 200% 100%;
       animation: skeleton-loading 1.5s infinite;
       color: transparent !important;
@@ -36,6 +36,10 @@
       pointer-events: none;
       user-select: none;
       border-radius: 4px;
+    }
+    .stat-info .skeleton {
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.2) 25%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.2) 75%);
+      background-size: 200% 100%;
     }
     .skeleton img {
       opacity: 0 !important;
@@ -195,7 +199,7 @@
       border-radius: 50%;
       border: 2px solid #ffffff;
       overflow: hidden;
-      background-color: #333;
+      background-color: #222; /* Warna gelap pencegah gambar pecah */
       flex-shrink: 0;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     }
@@ -203,6 +207,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
     }
     .profile-name {
       font-size: 18px;
@@ -211,8 +216,8 @@
       letter-spacing: -0.3px;
       word-break: break-word;
       text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
-      min-width: 100px;
-      min-height: 22px;
+      min-width: 90px;
+      min-height: 20px;
     }
     .profile-badges-container {
       display: flex;
@@ -325,6 +330,7 @@
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
+      background-color: #222;
     }
     .sub-avatar img {
       width: 100%;
@@ -370,6 +376,8 @@
     .stat-value {
       font-size: 20px;
       font-weight: 900;
+      display: inline-block;
+      max-width: 120px; /* Lebar dibatasi agar tidak melar */
     }
     .stat-subvalue {
       font-size: 13px;
@@ -603,7 +611,7 @@
   <div class="status-bar-top" id="top-status-bar">
     <div style="display: flex; align-items: center; gap: 8px;">
       <div class="pulse-dot"></div>
-      <span id="top-status-text">Connecting to Worker API...</span>
+      <span id="top-status-text">Fetching Signal...</span>
     </div>
     <span style="font-family: monospace; opacity: 0.6;" id="top-uid-label">UID: -</span>
   </div>
@@ -622,7 +630,7 @@
   <div class="profile-card">
     <div class="profile-top">
       <div class="avatar-section">
-        <div class="avatar"><img id="profile-avatar" src="" alt="Avatar"></div>
+        <div class="avatar"><img id="profile-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'></svg>" alt=""></div>
         <div class="profile-name skeleton-target" id="profile-name">Loading...</div>
       </div>
       <div class="profile-badges-container">
@@ -655,8 +663,8 @@
   <div class="stat-card">
     <div class="stat-main-container">
       <div class="stat-black-container">
-        <div class="sub-avatar"><img id="stat-role-icon" src="https://enka.network/ui/zzz/IconRoleCircle44.png" alt="Character"></div>
-        <div class="stat-badge-icon"><img id="stat-weapon-icon" src="https://enka.network/ui/zzz/Weapon_S_1371.png" alt="W-Engine"></div>
+        <div class="sub-avatar"><img id="stat-role-icon" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'></svg>" alt=""></div>
+        <div class="stat-badge-icon"><img id="stat-weapon-icon" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'></svg>" alt=""></div>
       </div>
       <div class="stat-info">
         <div class="stat-label" id="stat-label">Solo Burst</div>
@@ -708,7 +716,6 @@
   </div>
 
   <script>
-    // Endpoint Cloudflare Worker Milikmu
     const WORKER_BASE_URL = "https://zzz.searchdata.workers.dev";
 
     let currentPage = 1;
@@ -716,13 +723,11 @@
     let fullLeaderboardList = [];
     let currentFilteredList = [];
 
-    // Membaca Parameter UID dari URL Browser
     function getUIDFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get('uid') || '1314841424';
     }
 
-    // Toggle Mode Skeleton / Bone Loading pada UI
     function setSkeletonState(isLoading) {
       const targets = document.querySelectorAll('.skeleton-target');
       targets.forEach(el => {
@@ -755,10 +760,9 @@
       }
     }
 
-    // Mengambil Data dari Cloudflare Worker
     async function fetchEnkaData(uid) {
       document.getElementById("top-uid-label").textContent = `UID: ${uid}`;
-      document.getElementById("top-status-text").textContent = `Fetching via Worker API...`;
+      document.getElementById("top-status-text").textContent = `Fetching Signal...`;
       document.getElementById("top-status-bar").classList.remove("error");
 
       setSkeletonState(true);
@@ -771,14 +775,12 @@
 
         const data = await response.json();
         
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
 
         processEnkaResponse(uid, data);
-        document.getElementById("top-status-text").textContent = `Signal Connected (Enka Live)`;
+        document.getElementById("top-status-text").textContent = `Signal Connected`;
       } catch (error) {
-        console.warn("Worker error, menggunakan data fallback...", error);
+        console.warn("Worker fetch fallback...", error);
         document.getElementById("top-status-bar").classList.add("error");
         document.getElementById("top-status-text").textContent = `Signal Offline (Mock Data)`;
         renderFallbackProfile(uid);
@@ -820,7 +822,6 @@
       renderLeaderboard();
     }
 
-    // Memroses seluruh Agent dari Enka API
     function parseAvatarList(avatarList, dictionary) {
       if (!avatarList || avatarList.length === 0) {
         return generateDefaultAgents();
@@ -974,7 +975,6 @@
       document.getElementById("showing-text").textContent = `Showing page ${currentPage} of ${totalPages} (${currentFilteredList.length} Total Agents)`;
     }
 
-    // Event Listeners
     document.getElementById("prev-page-btn").addEventListener("click", () => {
       if (currentPage > 1) {
         currentPage--;
