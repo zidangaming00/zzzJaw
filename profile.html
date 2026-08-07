@@ -37,6 +37,10 @@
       user-select: none;
       border-radius: 4px;
     }
+    .stat-info .skeleton {
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.2) 25%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.2) 75%);
+      background-size: 200% 100%;
+    }
     .skeleton img {
       opacity: 0 !important;
     }
@@ -776,68 +780,122 @@
 
         const data = await response.json();
 
-        if (data.error) {
-          throw new Error(data.error);
+        // Validasi JSON (Apakah objek PlayerInfo kosong/tidak ada)
+        if (data.error || (!data.PlayerInfo && !data.playerInfo && !data.avatarInfoList)) {
+          throw new Error("UID_NOT_FOUND_OR_PRIVATE");
         }
 
         processEnkaResponse(uid, data);
         document.getElementById("top-status-text").textContent = `Signal Connected`;
       } catch (error) {
-        console.warn("Koneksi Enka gagal atau UID tidak valid:", error);
+        console.warn("Koneksi gagal atau UID tidak valid:", error);
         
-        // Peringatan di Top Status Bar tanpa me-redirect paksa!
-        document.getElementById("top-status-bar").classList.add("error");
-        document.getElementById("top-status-text").textContent = `Signal Offline (Showcase Unavailable)`;
+        let errorType = "uid_not_found";
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          errorType = "network_error";
+        }
         
-        // Render fallback mock data agar halaman tidak kosong
-        renderFallbackProfile(uid);
+        window.location.href = `https://zidangaming00.github.io/zzzJaw/?error=${errorType}&uid=${encodeURIComponent(uid)}`;
       } finally {
         setSkeletonState(false);
       }
     }
 
-    // Ekstraksi Nickname secara Dalam & Luas
-    function extractNickname(data, uid) {
-      if (!data) return `Proxy_${uid.slice(-4)}`;
+    // Ekstraksi Nilai dari Struktur JSON ZZZ
+    function extractStat(data, statType) {
+      if (!data) return 0;
       
-      const pInfo = data.playerInfo || data.player || data.profile || {};
+      const medals = data.PlayerInfo?.SocialDetail?.MedalList || 
+                     data.playerInfo?.socialDetail?.medalList || [];
+
+      // Type 11 = Hardcore Boss Score (Nineveh dll)
+      // Type 1 = Shiyu Defense Score
+      // Type 3 = Assault Floor Score
+      const typeMap = { 'shiyu': 1, 'assault': 3, 'hardcore': 11 };
       
-      return pInfo.nickname || 
-             pInfo.name || 
-             pInfo.nick || 
-             data.nickname || 
-             data.name || 
-             `Proxy_${uid.slice(-4)}`;
+      const foundMedal = medals.find(m => m.MedalType === typeMap[statType] || m.medalType === typeMap[statType]);
+      return foundMedal ? (foundMedal.MedalScore || foundMedal.medalScore || 0) : 0;
+    }
+
+    function extractNickname(data) {
+      if (!data) return "Player";
+      
+      const profileDetail = data.PlayerInfo?.SocialDetail?.ProfileDetail || 
+                            data.playerInfo?.socialDetail?.profileDetail || {};
+      const fallbackPInfo = data.PlayerInfo || data.playerInfo || {};
+
+      return profileDetail.Nickname || 
+             profileDetail.nickname || 
+             fallbackPInfo.nickname || 
+             fallbackPInfo.Nickname || 
+             "Player";
+    }
+
+    function extractBio(data) {
+      if (!data) return "Inter-Knot Proxy";
+      return data.PlayerInfo?.SocialDetail?.Desc || 
+             data.playerInfo?.socialDetail?.desc || 
+             "Inter-Knot Proxy";
+    }
+
+    function extractLevel(data) {
+      if (!data) return "60";
+      const profileDetail = data.PlayerInfo?.SocialDetail?.ProfileDetail || 
+                            data.playerInfo?.socialDetail?.profileDetail || {};
+      return profileDetail.Level || profileDetail.level || "60";
     }
 
     function processEnkaResponse(uid, data) {
-      const playerInfo = data.playerInfo || data.player || data.profile || {};
-      const avatarList = data.avatarInfoList || data.avatars || data.avatarList || [];
-      const nickname = extractNickname(data, uid);
+      // Data Agent List
+      const avatarList = data.PlayerInfo?.ShowcaseDetail?.AvatarList || 
+                         data.playerInfo?.showcaseDetail?.avatarList || 
+                         data.avatarInfoList || [];
+
+      // Data Player Profile
+      const nickname = extractNickname(data);
+      const bioDesc = extractBio(data);
+      const playerLevel = extractLevel(data);
+
+      const shiyuScore = extractStat(data, 'shiyu');
+      const assaultScore = extractStat(data, 'assault');
+      const hardcoreScore = extractStat(data, 'hardcore');
+      
+      // Ambil Avatar Icon Utama
+      const profileDetail = data.PlayerInfo?.SocialDetail?.ProfileDetail || data.playerInfo?.socialDetail?.profileDetail || {};
+      let headIcon = "IconInterKnotRole0062"; // Default
+      if (profileDetail.AvatarId || profileDetail.avatarId) {
+        headIcon = `IconRoleCircle${String(profileDetail.AvatarId || profileDetail.avatarId).slice(-2)}`;
+      }
       
       const profileData = {
         appName: "ZzzJaw",
         lastUpdated: "Last updated just now",
         profile: {
           name: nickname,
-          avatarUrl: playerInfo.headIcon ? `https://enka.network/ui/zzz/${playerInfo.headIcon}.png` : "https://enka.network/ui/zzz/IconInterKnotRole0062.png",
-          server: uid.startsWith('1') ? "ASIA" : "GLOBAL",
-          ilLevel: `IL ${playerInfo.level || 60}`,
+          avatarUrl: `https://enka.network/ui/zzz/${headIcon}.png`,
+          server: uid.startsWith('1') ? "ASIA" : (uid.startsWith('2') ? "AMERICA" : "GLOBAL"),
+          ilLevel: `IL ${playerLevel}`,
           tag: `UID: ${uid}`,
-          classTitle: playerInfo.signature || "Inter-Knot Authorized Proxy",
-          shiyuScore: playerInfo.shiyuFloor || 5,
-          assaultScore: playerInfo.assaultFloor || 8,
-          hardcoreScore: playerInfo.maxScore || 2506
+          classTitle: bioDesc,
+          shiyuScore: shiyuScore || "--",
+          assaultScore: assaultScore || "--",
+          hardcoreScore: hardcoreScore || "--"
         },
         statCard: {
-          roleIcon: "https://enka.network/ui/zzz/IconRoleCircle44.png",
-          weaponIcon: "https://enka.network/ui/zzz/Weapon_S_1371.png",
+          roleIcon: "https://enka.network/ui/zzz/IconRoleCircle44.png", // Fallback (Nanti diganti dinamis sesuai agent #1)
+          weaponIcon: "https://enka.network/ui/zzz/Weapon_S_1371.png", 
           label: "Agent Showcase",
-          value: `Top ${playerInfo.worldLevel || 'S'} Rank`,
+          value: `Top Rank`,
           subvalue: `Total Agents: ${avatarList.length}`
         },
         leaderboard: parseAvatarList(avatarList, data.characterDictionary || {})
       };
+
+      // Ganti Stat Card Icon dengan agent pertama jika ada
+      if (profileData.leaderboard.length > 0) {
+        profileData.statCard.roleIcon = profileData.leaderboard[0].icon;
+        profileData.statCard.label = profileData.leaderboard[0].name;
+      }
 
       renderProfile(profileData);
       fullLeaderboardList = profileData.leaderboard;
@@ -846,68 +904,28 @@
     }
 
     function parseAvatarList(avatarList, dictionary) {
-      if (!avatarList || avatarList.length === 0) {
-        return generateDefaultAgents();
-      }
+      if (!avatarList || avatarList.length === 0) return [];
 
       return avatarList.map((avatar, idx) => {
-        const agentName = avatar.name || (dictionary[avatar.avatarId]?.name) || `Agent ${avatar.avatarId}`;
-        const critRate = avatar.fightPropMap?.[201] ? (avatar.fightPropMap[201] * 100) : (avatar.stats?.critRate ? avatar.stats.critRate * 100 : 50.0);
-        const critDmg = avatar.fightPropMap?.[202] ? (avatar.fightPropMap[202] * 100) : (avatar.stats?.critDmg ? avatar.stats.critDmg * 100 : 150.0);
+        const agentId = avatar.Id || avatar.id || avatar.avatarId;
+        const agentName = (dictionary[agentId]?.name) || `Agent ${agentId}`;
+        
+        // Perhitungan Crit Kasar jika data mentah ZZZ
+        const critRate = 50.0; // Placeholder karena API mentah ZZZ belum tentu mengurai stats
+        const critDmg = 150.0;
+
+        let iconUrl = `https://enka.network/ui/zzz/IconRoleCircle${String(agentId).slice(-2)}.png`;
 
         return {
           id: idx + 1,
           name: agentName,
-          level: avatar.level || 60,
-          mindscape: avatar.rank || avatar.mindscape || 0,
+          level: avatar.Level || avatar.level || 60,
+          mindscape: avatar.TalentLevel || avatar.talentLevel || avatar.rank || 0,
           critRate: critRate,
           critDmg: critDmg,
-          icon: avatar.icon ? `https://enka.network/ui/zzz/${avatar.icon}.png` : "https://enka.network/ui/zzz/IconRoleCircle44.png"
+          icon: iconUrl
         };
       });
-    }
-
-    function generateDefaultAgents() {
-      return [
-        { id: 1, name: "Ye Shunguang", level: 60, mindscape: 0, critRate: 50.6, critDmg: 224.4, icon: "https://enka.network/ui/zzz/IconRoleCircle55.png" },
-        { id: 2, name: "Yixuan", level: 60, mindscape: 1, critRate: 48.2, critDmg: 176.4, icon: "https://enka.network/ui/zzz/IconRoleCircle44.png" },
-        { id: 3, name: "Dialyn", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle54.png" },
-        { id: 4, name: "Norma", level: 60, mindscape: 0, critRate: 85.0, critDmg: 83.6, icon: "https://enka.network/ui/zzz/IconRoleCircle65.png" },
-        { id: 5, name: "Starlight - Billy", level: 60, mindscape: 1, critRate: 43.4, critDmg: 166.8, icon: "https://enka.network/ui/zzz/IconRoleCircle62.png" },
-        { id: 6, name: "Lucia", level: 60, mindscape: 1, critRate: 31.4, critDmg: 74.0, icon: "https://enka.network/ui/zzz/IconRoleCircle50.png" },
-        { id: 7, name: "Remielle", level: 60, mindscape: 0, critRate: 7.4, critDmg: 78.8, icon: "https://enka.network/ui/zzz/IconRoleCircle67.png" }
-      ];
-    }
-
-    function renderFallbackProfile(uid) {
-      const fallbackData = {
-        appName: "ZzzJaw",
-        lastUpdated: "Last updated just now",
-        profile: {
-          name: `Proxy_${uid.slice(-4)}`,
-          avatarUrl: "https://enka.network/ui/zzz/IconInterKnotRole0062.png",
-          server: "ASIA",
-          ilLevel: "IL 60",
-          tag: `UID: ${uid}`,
-          classTitle: "Low Class Warrior",
-          shiyuScore: 5,
-          assaultScore: 8,
-          hardcoreScore: 2506
-        },
-        statCard: {
-          roleIcon: "https://enka.network/ui/zzz/IconRoleCircle44.png",
-          weaponIcon: "https://enka.network/ui/zzz/Weapon_S_1371.png",
-          label: "Solo Burst",
-          value: "Top 65.5%",
-          subvalue: "13204 / 20.2k"
-        },
-        leaderboard: generateDefaultAgents()
-      };
-
-      renderProfile(fallbackData);
-      fullLeaderboardList = fallbackData.leaderboard;
-      currentFilteredList = [...fullLeaderboardList];
-      renderLeaderboard();
     }
 
     function renderProfile(data) {
